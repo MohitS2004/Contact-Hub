@@ -112,29 +112,6 @@ export default function LoginPage() {
             Register here
           </Link>
         </p>
-
-        {/* Dev Mode - Temporary bypass for viewing pages without database */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            onClick={() => {
-              // Mock login data for dev viewing
-              localStorage.setItem('token', 'dev-token-mock');
-              localStorage.setItem('user', JSON.stringify({
-                id: 'dev-user-123',
-                email: 'dev@example.com',
-                role: 'user'
-              }));
-              router.push('/contacts');
-            }}
-            className="w-full bg-gray-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm"
-          >
-            🚀 Dev Mode: View Contacts (No DB Required)
-          </button>
-          <p className="mt-2 text-xs text-center text-gray-500">
-            Temporary bypass to view pages without database connection
-          </p>
-        </div>
       </div>
     </div>
   );
