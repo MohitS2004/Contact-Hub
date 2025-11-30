@@ -23,6 +23,9 @@ export class Contact {
   @Column()
   phone: string;
 
+  @Column({ nullable: true })
+  photo?: string;
+
   @Column()
   ownerId: string;
 

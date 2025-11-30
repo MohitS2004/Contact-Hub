@@ -35,14 +35,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     const errorResponse: ApiResponse = {
       success: false,
-      message: errorMessage,
       error: errorMessage,
-      timestamp: new Date().toISOString(),
+      statusCode: status,
     };
 
-    // Log error for debugging (but don't expose sensitive info)
     this.logger.error(
-      `${request.method} ${request.url} - Status: ${status} - Message: ${errorMessage}`,
+      `${request.method} ${request.url} - ${status} - ${errorMessage}`,
       exception instanceof Error ? exception.stack : undefined,
     );
 

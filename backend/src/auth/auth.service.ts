@@ -35,25 +35,20 @@ export class AuthService {
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     const { email, password } = registerDto;
 
-    this.logger.log(`Attempting to register user with email: ${email}`);
-
-    // Check if user already exists
     const existingUser = await this.userRepository.findOne({
       where: { email },
     });
 
     if (existingUser) {
-      this.logger.warn(`Registration failed: User with email ${email} already exists`);
+      this.logger.warn(`Registration failed: User ${email} already exists`);
       throw new ConflictException(APP_CONSTANTS.ERRORS.USER_ALREADY_EXISTS);
     }
 
-    // Hash password
     const passwordHash = await bcrypt.hash(
       password,
       APP_CONSTANTS.BCRYPT_SALT_ROUNDS,
     );
 
-    // Create user with default role 'user'
     const user = this.userRepository.create({
       email,
       passwordHash,
@@ -61,13 +56,15 @@ export class AuthService {
     });
 
     const savedUser = await this.userRepository.save(user);
-    this.logger.log(`User registered successfully with ID: ${savedUser.id}`);
+    this.logger.log(`User registered: ${savedUser.id}`);
 
-    // Generate JWT
-    const payload = { sub: savedUser.id, email: savedUser.email, role: savedUser.role };
+    const payload = {
+      sub: savedUser.id,
+      email: savedUser.email,
+      role: savedUser.role,
+    };
     const access_token = this.jwtService.sign(payload);
 
-    // Return JWT + user info (no password)
     return {
       access_token,
       user: {
@@ -81,33 +78,31 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<AuthResponse> {
     const { email, password } = loginDto;
 
-    this.logger.log(`Login attempt for email: ${email}`);
-
-    // Find user by email
     const user = await this.userRepository.findOne({
       where: { email },
     });
 
     if (!user) {
-      this.logger.warn(`Login failed: User with email ${email} not found`);
+      this.logger.warn(`Login failed: User ${email} not found`);
       throw new UnauthorizedException(APP_CONSTANTS.ERRORS.INVALID_CREDENTIALS);
     }
 
-    // Compare password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
-      this.logger.warn(`Login failed: Invalid password for email ${email}`);
+      this.logger.warn(`Login failed: Invalid password for ${email}`);
       throw new UnauthorizedException(APP_CONSTANTS.ERRORS.INVALID_CREDENTIALS);
     }
 
-    this.logger.log(`User logged in successfully with ID: ${user.id}`);
+    this.logger.log(`User logged in: ${user.id}`);
 
-    // Generate JWT
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
     const access_token = this.jwtService.sign(payload);
 
-    // Return JWT + user info (no password)
     return {
       access_token,
       user: {

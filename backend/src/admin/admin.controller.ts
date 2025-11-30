@@ -25,20 +25,11 @@ import { GetContactsQueryDto } from '../contacts/dto/get-contacts-query.dto';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @Get('ping')
-  ping() {
-    return {
-      message: 'Admin access granted',
-      timestamp: new Date().toISOString(),
-    };
-  }
-
   @Get('stats')
   async getStats() {
     return this.adminService.getStats();
   }
 
-  // User management endpoints
   @Get('users')
   async findAllUsers(@Query() query: GetUsersQueryDto) {
     return this.adminService.findAllUsers(query);

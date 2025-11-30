@@ -21,10 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if authenticated
   const isAuthenticated = !!user && !!token;
 
-  // Restore auth from localStorage on mount
   useEffect(() => {
     checkAuth();
   }, []);
@@ -39,12 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
 
-        // Verify token is still valid by calling getMe
         try {
           const userInfo = await getMe();
           setUser(userInfo);
         } catch (error) {
-          // Token invalid, clear storage
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setToken(null);
@@ -52,7 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error) {
-      // Error checking auth, clear everything
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setToken(null);
@@ -64,24 +59,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response: LoginResponse = await apiLogin(email, password);
-    
-    // Store token and user
     localStorage.setItem('token', response.access_token);
     localStorage.setItem('user', JSON.stringify(response.user));
-    
-    // Update state
     setToken(response.access_token);
     setUser(response.user as UserInfo);
   };
 
   const register = async (email: string, password: string) => {
     const response: LoginResponse = await apiRegister(email, password);
-    
-    // Store token and user
     localStorage.setItem('token', response.access_token);
     localStorage.setItem('user', JSON.stringify(response.user));
-    
-    // Update state
     setToken(response.access_token);
     setUser(response.user as UserInfo);
   };

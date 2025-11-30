@@ -30,30 +30,20 @@ export class AdminService {
 
     const queryBuilder = this.userRepository.createQueryBuilder('user');
 
-    // Search filter: search by email
     if (search) {
       queryBuilder.where('user.email ILIKE :search', { search: `%${search}%` });
     }
 
-    // Order by createdAt descending
     queryBuilder.orderBy('user.createdAt', 'DESC');
-
-    // Get total count before pagination
     const total = await queryBuilder.getCount();
-
-    // Apply pagination
     queryBuilder.skip(skip).take(limit);
-
-    // Execute query
     const items = await queryBuilder.getMany();
 
-    // Remove password hash from response
     const usersWithoutPassword = items.map((user) => {
       const { passwordHash, ...userWithoutPassword } = user;
       return userWithoutPassword;
     });
 
-    // Calculate total pages
     const totalPages = Math.ceil(total / limit);
 
     return {
@@ -72,11 +62,10 @@ export class AdminService {
     });
 
     if (!user) {
-      this.logger.warn(`User not found with ID: ${id}`);
+      this.logger.warn(`User not found: ${id}`);
       throw new NotFoundException('User not found');
     }
 
-    // Remove password hash from response
     const { passwordHash, ...userWithoutPassword } = user;
     return userWithoutPassword as User;
   }
@@ -88,19 +77,17 @@ export class AdminService {
     });
 
     if (!user) {
-      this.logger.warn(`User not found with ID: ${id}`);
+      this.logger.warn(`User not found: ${id}`);
       throw new NotFoundException('User not found');
     }
 
-    // Delete all contacts owned by this user
     if (user.contacts && user.contacts.length > 0) {
       await this.contactRepository.remove(user.contacts);
       this.logger.log(`Deleted ${user.contacts.length} contacts for user ${id}`);
     }
 
-    // Delete the user
     await this.userRepository.remove(user);
-    this.logger.log(`Deleted user ${id}`);
+    this.logger.log(`Deleted user: ${id}`);
   }
 
   async updateUserRole(id: string, updateRoleDto: UpdateUserRoleDto): Promise<User> {
@@ -109,15 +96,14 @@ export class AdminService {
     });
 
     if (!user) {
-      this.logger.warn(`User not found with ID: ${id}`);
+      this.logger.warn(`User not found: ${id}`);
       throw new NotFoundException('User not found');
     }
 
     user.role = updateRoleDto.role;
     const updatedUser = await this.userRepository.save(user);
-    this.logger.log(`Updated role for user ${id} to ${updateRoleDto.role}`);
+    this.logger.log(`Updated role for user ${id}: ${updateRoleDto.role}`);
 
-    // Remove password hash from response
     const { passwordHash, ...userWithoutPassword } = updatedUser;
     return userWithoutPassword as User;
   }
@@ -132,13 +118,10 @@ export class AdminService {
     } = query;
 
     const skip = (page - 1) * limit;
-
-    // Build query builder with user relation
     const queryBuilder = this.contactRepository
       .createQueryBuilder('contact')
       .leftJoinAndSelect('contact.owner', 'owner');
 
-    // Search filter: search by name or email
     if (search) {
       queryBuilder.andWhere(
         '(contact.name ILIKE :search OR contact.email ILIKE :search)',
@@ -146,27 +129,19 @@ export class AdminService {
       );
     }
 
-    // Sorting
     const orderBy = `contact.${sortBy}`;
     queryBuilder.orderBy(orderBy, sortOrder);
 
-    // Get total count before pagination
     const total = await queryBuilder.getCount();
-
-    // Apply pagination
     queryBuilder.skip(skip).take(limit);
-
-    // Execute query
     const items = await queryBuilder.getMany();
 
-    // Transform to include owner email
     const contactsWithOwner = items.map((contact) => ({
       ...contact,
       ownerEmail: contact.owner?.email || null,
       ownerName: contact.owner?.email?.split('@')[0] || null,
     }));
 
-    // Calculate total pages
     const totalPages = Math.ceil(total / limit);
 
     return {
@@ -195,11 +170,10 @@ export class AdminService {
     });
 
     if (!contact) {
-      this.logger.warn(`Contact not found with ID: ${id}`);
+      this.logger.warn(`Contact not found: ${id}`);
       throw new NotFoundException('Contact not found');
     }
 
-    // Transform to include owner email
     return {
       ...contact,
       ownerEmail: contact.owner?.email || null,
@@ -213,12 +187,12 @@ export class AdminService {
     });
 
     if (!contact) {
-      this.logger.warn(`Contact not found with ID: ${id}`);
+      this.logger.warn(`Contact not found: ${id}`);
       throw new NotFoundException('Contact not found');
     }
 
     await this.contactRepository.remove(contact);
-    this.logger.log(`Admin deleted contact ${id}`);
+    this.logger.log(`Admin deleted contact: ${id}`);
   }
 }
 

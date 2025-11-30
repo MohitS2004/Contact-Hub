@@ -1,17 +1,11 @@
-/**
- * Standard API response interface
- */
 export interface ApiResponse<T = any> {
   success: boolean;
-  message: string;
   data?: T;
+  message?: string;
   error?: string;
-  timestamp: string;
+  statusCode?: number;
 }
 
-/**
- * Paginated response interface
- */
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
@@ -19,4 +13,3 @@ export interface PaginatedResponse<T> {
   limit: number;
   totalPages: number;
 }
-

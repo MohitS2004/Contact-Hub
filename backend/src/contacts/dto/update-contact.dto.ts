@@ -14,6 +14,10 @@ export class UpdateContactDto {
   @IsString()
   @MinLength(1)
   phone?: string;
+
+  @IsOptional()
+  @IsString()
+  photo?: string;
 }
 
 

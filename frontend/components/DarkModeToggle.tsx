@@ -6,17 +6,12 @@ export default function DarkModeToggle() {
   const [darkMode, setDarkMode] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  /**
-   * Initialize dark mode from localStorage on component mount
-   * Prevents hydration mismatch by applying the class before rendering
-   */
   useEffect(() => {
     setMounted(true);
     const stored = localStorage.getItem('darkMode');
     const isDark = stored === 'true';
     setDarkMode(isDark);
-    
-    // Apply dark mode class immediately to prevent flash of wrong theme
+
     const html = document.documentElement;
     if (isDark) {
       html.classList.add('dark');
@@ -25,23 +20,14 @@ export default function DarkModeToggle() {
     }
   }, []);
 
-  /**
-   * Toggles dark mode by adding/removing the 'dark' class from the document element
-   * and updating localStorage to persist the preference
-   */
   const handleToggle = () => {
     const html = document.documentElement;
-    
-    // Toggle the dark class on the document element
     html.classList.toggle('dark');
     const finalState = html.classList.contains('dark');
-    
-    // Update React state and localStorage to persist preference
     setDarkMode(finalState);
     localStorage.setItem('darkMode', String(finalState));
   };
 
-  // Prevent hydration mismatch by not rendering until mounted
   if (!mounted) {
     return <div className="w-9 h-9" aria-hidden="true" />;
   }

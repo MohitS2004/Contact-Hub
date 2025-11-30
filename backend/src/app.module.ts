@@ -15,11 +15,10 @@ import { ContactsModule } from './contacts/contacts.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const useSsl = config.get<string>('DB_SSL') === 'true';
-        // Try using connection URI if provided, otherwise use individual parameters
         const connectionUri = config.get('DATABASE_URL');
         const baseConfig = {
           autoLoadEntities: true,
-          synchronize: true, // set to false in production
+          synchronize: config.get('NODE_ENV') !== 'production',
           ssl: useSsl ? { rejectUnauthorized: false } : false,
         };
 

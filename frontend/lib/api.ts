@@ -1,9 +1,9 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import toast from 'react-hot-toast';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
-// Create axios instance
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -11,7 +11,6 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor: Attach Authorization header from localStorage
 apiClient.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
@@ -27,11 +26,8 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor: Handle 401 (unauthorized) - redirect to login
-// Also unwraps standard API response format { success, message, data, timestamp }
 apiClient.interceptors.response.use(
   (response) => {
-    // If response is paginated (has items, total, page, etc.), keep it as-is
     if (
       response.data &&
       typeof response.data === 'object' &&
@@ -40,26 +36,27 @@ apiClient.interceptors.response.use(
     ) {
       return response;
     }
-    
-    // If response follows standard API format, unwrap it
-    if (response.data && typeof response.data === 'object' && 'success' in response.data && 'data' in response.data) {
+
+    if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'success' in response.data &&
+      'data' in response.data
+    ) {
       response.data = response.data.data;
     }
     return response;
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Clear token and user data
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         toast.error('Session expired. Please login again.');
-        // Redirect to login page
         window.location.href = '/login';
       }
     } else {
-      // Show error toast
-      const errorMessage = 
+      const errorMessage =
         (error.response?.data as any)?.error ||
         (error.response?.data as any)?.message ||
         error.message ||
@@ -67,10 +64,9 @@ apiClient.interceptors.response.use(
       toast.error(errorMessage);
     }
     return Promise.reject(error);
-  }
+  },
 );
 
-// Helper functions
 export interface LoginResponse {
   access_token: string;
   user: {
@@ -93,6 +89,7 @@ export interface Contact {
   name: string;
   email: string;
   phone: string;
+  photo?: string | null;
   ownerId: string;
   createdAt: string;
   updatedAt: string;
@@ -118,8 +115,10 @@ export interface PaginatedContactsResponse {
   totalPages: number;
 }
 
-// Register function
-export const register = async (email: string, password: string): Promise<LoginResponse> => {
+export const register = async (
+  email: string,
+  password: string,
+): Promise<LoginResponse> => {
   const response = await apiClient.post<LoginResponse>('/auth/register', {
     email,
     password,
@@ -127,8 +126,10 @@ export const register = async (email: string, password: string): Promise<LoginRe
   return response.data;
 };
 
-// Login function
-export const login = async (email: string, password: string): Promise<LoginResponse> => {
+export const login = async (
+  email: string,
+  password: string,
+): Promise<LoginResponse> => {
   const response = await apiClient.post<LoginResponse>('/auth/login', {
     email,
     password,
@@ -136,13 +137,11 @@ export const login = async (email: string, password: string): Promise<LoginRespo
   return response.data;
 };
 
-// Get current user info
 export const getMe = async (): Promise<UserInfo> => {
   const response = await apiClient.get<UserInfo>('/auth/me');
   return response.data;
 };
 
-// Contacts API functions
 export const getContacts = async (
   page: number = 1,
   limit: number = 10,
@@ -170,50 +169,144 @@ export const getContact = async (id: string): Promise<Contact> => {
   return response.data;
 };
 
-export const createContact = async (data: CreateContactData): Promise<Contact> => {
-  const response = await apiClient.post<Contact>('/contacts', data);
-  return response.data;
+export const createContact = async (
+  data: CreateContactData,
+  photo?: File,
+): Promise<Contact> => {
+  const formData = new FormData();
+  formData.append('name', data.name);
+  formData.append('email', data.email);
+  formData.append('phone', data.phone);
+  if (photo) {
+    formData.append('photo', photo);
+  }
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/contacts`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to create contact';
+      try {
+        const error = await response.json();
+        errorMessage = error.message || error.error || errorMessage;
+      } catch {
+        const errorText = await response.text();
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    return result.data || result;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to create contact');
+  }
 };
 
-export const updateContact = async (id: string, data: UpdateContactData): Promise<Contact> => {
-  const response = await apiClient.put<Contact>(`/contacts/${id}`, data);
-  return response.data;
+export const updateContact = async (
+  id: string,
+  data: UpdateContactData,
+  photo?: File,
+): Promise<Contact> => {
+  const formData = new FormData();
+  formData.append('name', data.name || '');
+  formData.append('email', data.email || '');
+  formData.append('phone', data.phone || '');
+  if (photo) {
+    formData.append('photo', photo);
+  }
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/contacts/${id}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to update contact';
+      try {
+        const error = await response.json();
+        errorMessage = error.message || error.error || errorMessage;
+      } catch {
+        const errorText = await response.text();
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    return result.data || result;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to update contact');
+  }
 };
 
 export const deleteContact = async (id: string): Promise<void> => {
   await apiClient.delete(`/contacts/${id}`);
 };
 
-// Export contacts to CSV
 export const exportContactsToCsv = async (): Promise<void> => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (!token) {
     throw new Error('No authentication token found');
   }
 
-  const response = await fetch(`${API_BASE_URL}/contacts/export`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/contacts/export`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = 'Failed to export contacts';
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch {
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `contacts-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
     throw new Error('Failed to export contacts');
   }
-
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `contacts-${new Date().toISOString().split('T')[0]}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
 };
 
-// Admin API functions
 export interface AdminStats {
   totalUsers: number;
   totalContacts: number;
@@ -316,6 +409,5 @@ export const deleteAdminContact = async (id: string): Promise<void> => {
   await apiClient.delete(`/admin/contacts/${id}`);
 };
 
-// Export the apiClient for custom requests
 export default apiClient;
 

@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Contact } from '../entities/contact.entity';
 import { User, UserRole } from '../entities/user.entity';
 import { CreateContactDto } from './dto/create-contact.dto';
@@ -36,16 +38,12 @@ export class ContactsService {
     } = query;
 
     const skip = (page - 1) * limit;
-
-    // Build query builder
     const queryBuilder = this.contactRepository.createQueryBuilder('contact');
 
-    // Ownership filter: regular users see only their own, admin sees all
     if (currentUser.role !== UserRole.ADMIN) {
       queryBuilder.where('contact.ownerId = :ownerId', { ownerId: currentUser.id });
     }
 
-    // Search filter: search by name or email
     if (search) {
       queryBuilder.andWhere(
         '(contact.name ILIKE :search OR contact.email ILIKE :search)',
@@ -53,20 +51,12 @@ export class ContactsService {
       );
     }
 
-    // Sorting
     const orderBy = `contact.${sortBy}`;
     queryBuilder.orderBy(orderBy, sortOrder);
 
-    // Get total count before pagination
     const total = await queryBuilder.getCount();
-
-    // Apply pagination
     queryBuilder.skip(skip).take(limit);
-
-    // Execute query
     const items = await queryBuilder.getMany();
-
-    // Calculate total pages
     const totalPages = Math.ceil(total / limit);
 
     return {
@@ -78,13 +68,28 @@ export class ContactsService {
     };
   }
 
-  async create(createContactDto: CreateContactDto, currentUser: User): Promise<Contact> {
+  async create(
+    createContactDto: CreateContactDto,
+    currentUser: User,
+    file?: Express.Multer.File,
+  ): Promise<Contact> {
+    this.logger.log(`Creating contact for user ${currentUser.id}`);
+    this.logger.log(`File received: ${file ? file.filename : 'none'}`);
+
+    const photoPath = file ? `/uploads/contacts/${file.filename}` : undefined;
+    if (photoPath) {
+      this.logger.log(`Photo path: ${photoPath}`);
+    }
+
     const contact = this.contactRepository.create({
       ...createContactDto,
+      photo: photoPath,
       ownerId: currentUser.id,
     });
 
-    return this.contactRepository.save(contact);
+    const savedContact = await this.contactRepository.save(contact);
+    this.logger.log(`Contact created with ID: ${savedContact.id}, Photo: ${savedContact.photo}`);
+    return savedContact;
   }
 
   async findOne(id: string, currentUser: User): Promise<Contact> {
@@ -93,15 +98,12 @@ export class ContactsService {
     });
 
     if (!contact) {
-      this.logger.warn(`Contact not found with ID: ${id}`);
+      this.logger.warn(`Contact not found: ${id}`);
       throw new NotFoundException(APP_CONSTANTS.ERRORS.CONTACT_NOT_FOUND);
     }
 
-    // Ownership check: user can only access their own contacts, admin can access any
     if (currentUser.role !== UserRole.ADMIN && contact.ownerId !== currentUser.id) {
-      this.logger.warn(
-        `Unauthorized access attempt: User ${currentUser.id} tried to access contact ${id}`,
-      );
+      this.logger.warn(`Unauthorized access: User ${currentUser.id} -> Contact ${id}`);
       throw new ForbiddenException(APP_CONSTANTS.ERRORS.UNAUTHORIZED_ACCESS);
     }
 
@@ -112,48 +114,77 @@ export class ContactsService {
     id: string,
     updateContactDto: UpdateContactDto,
     currentUser: User,
+    file?: Express.Multer.File,
   ): Promise<Contact> {
     const contact = await this.findOne(id, currentUser);
 
-    // Update contact fields
-    Object.assign(contact, updateContactDto);
+    this.logger.log(`Updating contact ${id} for user ${currentUser.id}`);
+    this.logger.log(`File received: ${file ? file.filename : 'none'}`);
 
-    return this.contactRepository.save(contact);
+    if (file) {
+      if (contact.photo) {
+        const oldPhotoPath = path.join(process.cwd(), contact.photo);
+        if (fs.existsSync(oldPhotoPath)) {
+          fs.unlinkSync(oldPhotoPath);
+          this.logger.log(`Deleted old photo: ${oldPhotoPath}`);
+        }
+      }
+      contact.photo = `/uploads/contacts/${file.filename}`;
+      this.logger.log(`New photo path: ${contact.photo}`);
+    }
+
+    if (updateContactDto.name !== undefined && updateContactDto.name !== '') {
+      contact.name = updateContactDto.name;
+    }
+    if (updateContactDto.email !== undefined && updateContactDto.email !== '') {
+      contact.email = updateContactDto.email;
+    }
+    if (updateContactDto.phone !== undefined && updateContactDto.phone !== '') {
+      contact.phone = updateContactDto.phone;
+    }
+
+    const savedContact = await this.contactRepository.save(contact);
+    this.logger.log(`Contact updated: ${savedContact.id}, Photo: ${savedContact.photo}`);
+    return savedContact;
   }
 
   async remove(id: string, currentUser: User): Promise<void> {
     const contact = await this.findOne(id, currentUser);
+
+    if (contact.photo) {
+      const photoPath = path.join(process.cwd(), contact.photo);
+      if (fs.existsSync(photoPath)) {
+        fs.unlinkSync(photoPath);
+        this.logger.log(`Deleted photo file: ${photoPath}`);
+      }
+    }
+
     await this.contactRepository.remove(contact);
   }
 
-  /**
-   * Export all contacts for the current user as CSV
-   * Admin users can export all contacts
-   */
   async exportToCsv(currentUser: User): Promise<string> {
     const queryBuilder = this.contactRepository.createQueryBuilder('contact');
 
-    // Ownership filter: regular users see only their own, admin sees all
     if (currentUser.role !== UserRole.ADMIN) {
       queryBuilder.where('contact.ownerId = :ownerId', { ownerId: currentUser.id });
     }
 
-    // Order by creation date
     queryBuilder.orderBy('contact.createdAt', 'DESC');
-
     const contacts = await queryBuilder.getMany();
 
-    // CSV header
+    const escapeCsvField = (field: string): string => {
+      return `"${field.replace(/"/g, '""')}"`;
+    };
+
     const headers = ['Name', 'Email', 'Phone', 'Created At'];
     const csvRows = [headers.join(',')];
 
-    // CSV rows
     for (const contact of contacts) {
       const row = [
-        `"${contact.name.replace(/"/g, '""')}"`,
-        `"${contact.email.replace(/"/g, '""')}"`,
-        `"${contact.phone.replace(/"/g, '""')}"`,
-        `"${new Date(contact.createdAt).toISOString()}"`,
+        escapeCsvField(contact.name),
+        escapeCsvField(contact.email),
+        escapeCsvField(contact.phone),
+        escapeCsvField(new Date(contact.createdAt).toISOString()),
       ];
       csvRows.push(row.join(','));
     }

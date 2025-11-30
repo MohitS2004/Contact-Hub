@@ -85,81 +85,81 @@ export default function AdminUsersPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Manage Users</h1>
-            <Link href="/admin" className="text-indigo-600 hover:text-indigo-700">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Manage Users</h1>
+            <Link href="/admin" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
               ← Back to Admin
             </Link>
           </div>
 
           {/* Search */}
-          <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by email..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700"
             />
           </div>
 
           {loading && (
             <div className="text-center py-12">
-              <p className="text-gray-600">Loading users...</p>
+              <p className="text-gray-600 dark:text-gray-400">Loading users...</p>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-700">{error}</p>
+            <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4 mb-6">
+              <p className="text-red-700 dark:text-red-100">{error}</p>
             </div>
           )}
 
           {!loading && !error && users.length > 0 && (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Role</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Created</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {users.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email}</td>
+                      <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{user.email}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <select
                             value={user.role}
                             onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                            className="text-sm border border-gray-300 rounded px-2 py-1"
+                            className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                           >
                             <option value="user">User</option>
                             <option value="admin">Admin</option>
                           </select>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {new Date(user.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end gap-2">
                             <Link
                               href={`/admin/users/${user.id}`}
-                              className="text-indigo-600 hover:text-indigo-900"
+                              className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
                             >
                               View
                             </Link>
                             <button
                               onClick={() => handleDelete(user.id)}
                               disabled={deletingId === user.id}
-                              className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                              className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 disabled:opacity-50"
                             >
                               {deletingId === user.id ? 'Deleting...' : 'Delete'}
                             </button>
@@ -175,23 +175,23 @@ export default function AdminUsersPage() {
 
           {/* Pagination */}
           {!loading && !error && totalPages > 0 && (
-            <div className="mt-6 bg-white rounded-lg shadow p-4">
+            <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
               <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
                   Page {page} of {totalPages} | Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} users
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPage(page - 1)}
                     disabled={page === 1}
-                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setPage(page + 1)}
                     disabled={page === totalPages}
-                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                   >
                     Next
                   </button>

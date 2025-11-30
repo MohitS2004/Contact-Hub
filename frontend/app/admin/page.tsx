@@ -46,15 +46,15 @@ export default function AdminPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Admin Dashboard</h1>
 
           {loading && (
             <div className="text-center py-12">
-              <p className="text-gray-600">Loading stats...</p>
+              <p className="text-gray-600 dark:text-gray-400">Loading stats...</p>
             </div>
           )}
 
@@ -67,11 +67,11 @@ export default function AdminPage() {
           {!loading && !error && stats && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {/* Total Users Card */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Users</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalUsers}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{stats.totalUsers}</p>
                   </div>
                   <div className="p-3 bg-indigo-100 rounded-full">
                     <svg
@@ -98,11 +98,11 @@ export default function AdminPage() {
               </div>
 
               {/* Total Contacts Card */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Contacts</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalContacts}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Contacts</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{stats.totalContacts}</p>
                   </div>
                   <div className="p-3 bg-green-100 rounded-full">
                     <svg
@@ -131,24 +131,24 @@ export default function AdminPage() {
           )}
 
           {/* Quick Links */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Link
                 href="/admin/users"
-                className="p-4 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
+                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
               >
-                <h3 className="font-semibold text-gray-900 mb-2">Manage Users</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Manage Users</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   View, edit, and delete users. Change user roles.
                 </p>
               </Link>
               <Link
                 href="/admin/contacts"
-                className="p-4 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
+                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
               >
-                <h3 className="font-semibold text-gray-900 mb-2">Manage Contacts</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Manage Contacts</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   View all contacts across all users. Search and filter contacts.
                 </p>
               </Link>
