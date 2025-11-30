@@ -49,7 +49,7 @@ export default function LoginPage() {
       <div className="absolute top-4 right-4">
         <DarkModeToggle />
       </div>
-      <div className="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+      <div className="w-full max-w-md mx-6 sm:mx-auto p-6 sm:p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
         <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-2">
           Login
         </h1>
