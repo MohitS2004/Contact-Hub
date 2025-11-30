@@ -6,8 +6,11 @@ import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Navbar from '@/components/Navbar';
 import ContactsTable from '@/components/ContactsTable';
+import EmptyState from '@/components/EmptyState';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { useAuth } from '@/contexts/AuthContext';
-import { getContacts, deleteContact, Contact } from '@/lib/api';
+import { getContacts, deleteContact, exportContactsToCsv, Contact } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function ContactsPage() {
   const router = useRouter();
@@ -118,7 +121,8 @@ export default function ContactsPage() {
       setTotal(data.total);
       setTotalPages(data.totalPages);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load contacts');
+      const errorMessage = err.response?.data?.message || 'Failed to load contacts';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -161,26 +165,41 @@ export default function ContactsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Contacts</h1>
-            <Link
-              href="/contacts/new"
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              Add New Contact
-            </Link>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Contacts</h1>
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    await exportContactsToCsv();
+                    toast.success('Contacts exported successfully!');
+                  } catch (err: any) {
+                    toast.error(err.message || 'Failed to export contacts');
+                  }
+                }}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:bg-green-500 dark:hover:bg-green-600"
+              >
+                Export CSV
+              </button>
+              <Link
+                href="/contacts/new"
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              >
+                Add New Contact
+              </Link>
+            </div>
           </div>
 
           {/* Filter and Sort Controls */}
-          <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Search */}
               <div>
-                <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Search
                 </label>
                 <input
@@ -189,20 +208,20 @@ export default function ContactsPage() {
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder="Search by name or email..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700"
                 />
               </div>
 
               {/* Sort */}
               <div className="md:col-span-2">
-                <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="sort" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Sort By
                 </label>
                 <select
                   id="sort"
                   value={getSortValue()}
                   onChange={(e) => setSortFromValue(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700"
                 >
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
@@ -214,7 +233,7 @@ export default function ContactsPage() {
 
             {/* Results count and limit */}
             <div className="mt-4 flex justify-between items-center flex-wrap gap-4">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
                 {total > 0 ? (
                   <>
                     Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} contacts
@@ -224,14 +243,14 @@ export default function ContactsPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <label htmlFor="limit" className="text-sm text-gray-700">
+                <label htmlFor="limit" className="text-sm text-gray-700 dark:text-gray-300">
                   Per page:
                 </label>
                 <select
                   id="limit"
                   value={limit}
                   onChange={(e) => handleLimitChange(Number(e.target.value))}
-                  className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 text-sm"
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700 text-sm"
                 >
                   <option value="10">10</option>
                   <option value="20">20</option>
@@ -260,41 +279,23 @@ export default function ContactsPage() {
             </div>
           )}
 
+          {loading && <TableSkeleton />}
+
           {!loading && !error && contacts.length === 0 && (
-            <div className="bg-white rounded-lg shadow p-12 text-center">
-              {searchQuery ? (
-                <>
-                  <p className="text-gray-600 text-lg mb-4">
-                    No results for &quot;{searchQuery}&quot;
-                  </p>
-                  <button
-                    onClick={() => handleSearchChange('')}
-                    className="text-indigo-600 hover:text-indigo-700 font-medium"
-                  >
-                    Clear search
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p className="text-gray-600 text-lg mb-4">No contacts yet</p>
-                  <Link
-                    href="/contacts/new"
-                    className="text-indigo-600 hover:text-indigo-700 font-medium"
-                  >
-                    Create your first contact →
-                  </Link>
-                </>
-              )}
-            </div>
+            <EmptyState
+              title={searchQuery ? `No results for "${searchQuery}"` : 'No contacts yet'}
+              description={
+                searchQuery
+                  ? 'Try a different search term or clear your search to see all contacts.'
+                  : 'Get started by creating your first contact!'
+              }
+              actionLabel={searchQuery ? 'Clear search' : 'Create your first contact'}
+              actionHref={searchQuery ? undefined : '/contacts/new'}
+              onAction={searchQuery ? () => handleSearchChange('') : undefined}
+            />
           )}
 
-          {loading && (
-            <div className="text-center py-12">
-              <p className="text-gray-600">Loading contacts...</p>
-            </div>
-          )}
-
-          {!loading && (
+          {!loading && contacts.length > 0 && (
             <ContactsTable
               contacts={contacts}
               onDelete={handleDelete}
@@ -304,10 +305,10 @@ export default function ContactsPage() {
 
           {/* Pagination Controls */}
           {!loading && !error && totalPages > 0 && (
-            <div className="mt-6 bg-white rounded-lg shadow p-4">
+            <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 {/* Page info */}
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
                   Page {page} of {totalPages}
                 </div>
 
@@ -316,7 +317,7 @@ export default function ContactsPage() {
                   <button
                     onClick={() => handlePageChange(page - 1)}
                     disabled={page === 1}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Previous
                   </button>
@@ -341,7 +342,7 @@ export default function ContactsPage() {
                           className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${
                             page === pageNum
                               ? 'bg-indigo-600 text-white border-indigo-600'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
                           }`}
                         >
                           {pageNum}
@@ -353,7 +354,7 @@ export default function ContactsPage() {
                   <button
                     onClick={() => handlePageChange(page + 1)}
                     disabled={page === totalPages}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Next
                   </button>

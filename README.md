@@ -6,7 +6,7 @@ A full-stack contact management application built with NestJS and Next.js.
 
 - **Backend**: NestJS, PostgreSQL, TypeORM, JWT Authentication
 - **Frontend**: Next.js 16, TypeScript, Tailwind CSS v4
-- **Features**: User authentication, role-based access control, contact CRUD, dark mode
+- **Features**: User authentication, role-based access control, contact CRUD, dark mode, CSV export
 
 ## Quick Start
 
@@ -72,6 +72,39 @@ A full-stack contact management application built with NestJS and Next.js.
    ```
 
    Frontend runs on `http://localhost:3000`
+
+## Docker Setup
+
+### Prerequisites
+
+- Docker and Docker Compose installed
+
+### Running with Docker
+
+1. Build and start all services:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. View logs:
+   ```bash
+   docker-compose logs -f
+   ```
+
+3. Stop all services:
+   ```bash
+   docker-compose down
+   ```
+
+4. Stop and remove volumes (clears database):
+   ```bash
+   docker-compose down -v
+   ```
+
+The application will be available at:
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:3001`
+- PostgreSQL: `localhost:5432`
 
 ## Usage
 

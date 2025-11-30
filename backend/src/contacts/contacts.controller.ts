@@ -10,7 +10,9 @@ import {
   HttpCode,
   HttpStatus,
   Query,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
@@ -53,6 +55,16 @@ export class ContactsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @CurrentUser() user: User) {
     return this.contactsService.remove(id, user);
+  }
+
+  @Get('export')
+  async export(@CurrentUser() user: User, @Res() res: Response) {
+    const csv = await this.contactsService.exportToCsv(user);
+    const filename = `contacts-${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
   }
 }
 

@@ -125,5 +125,40 @@ export class ContactsService {
     const contact = await this.findOne(id, currentUser);
     await this.contactRepository.remove(contact);
   }
+
+  /**
+   * Export all contacts for the current user as CSV
+   * Admin users can export all contacts
+   */
+  async exportToCsv(currentUser: User): Promise<string> {
+    const queryBuilder = this.contactRepository.createQueryBuilder('contact');
+
+    // Ownership filter: regular users see only their own, admin sees all
+    if (currentUser.role !== UserRole.ADMIN) {
+      queryBuilder.where('contact.ownerId = :ownerId', { ownerId: currentUser.id });
+    }
+
+    // Order by creation date
+    queryBuilder.orderBy('contact.createdAt', 'DESC');
+
+    const contacts = await queryBuilder.getMany();
+
+    // CSV header
+    const headers = ['Name', 'Email', 'Phone', 'Created At'];
+    const csvRows = [headers.join(',')];
+
+    // CSV rows
+    for (const contact of contacts) {
+      const row = [
+        `"${contact.name.replace(/"/g, '""')}"`,
+        `"${contact.email.replace(/"/g, '""')}"`,
+        `"${contact.phone.replace(/"/g, '""')}"`,
+        `"${new Date(contact.createdAt).toISOString()}"`,
+      ];
+      csvRows.push(row.join(','));
+    }
+
+    return csvRows.join('\n');
+  }
 }
 

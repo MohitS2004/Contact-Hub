@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import toast from 'react-hot-toast';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -52,9 +53,18 @@ apiClient.interceptors.response.use(
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        toast.error('Session expired. Please login again.');
         // Redirect to login page
         window.location.href = '/login';
       }
+    } else {
+      // Show error toast
+      const errorMessage = 
+        (error.response?.data as any)?.error ||
+        (error.response?.data as any)?.message ||
+        error.message ||
+        'An error occurred';
+      toast.error(errorMessage);
     }
     return Promise.reject(error);
   }
@@ -172,6 +182,35 @@ export const updateContact = async (id: string, data: UpdateContactData): Promis
 
 export const deleteContact = async (id: string): Promise<void> => {
   await apiClient.delete(`/contacts/${id}`);
+};
+
+// Export contacts to CSV
+export const exportContactsToCsv = async (): Promise<void> => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/contacts/export`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to export contacts');
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `contacts-${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
 };
 
 // Admin API functions
