@@ -17,10 +17,18 @@ export default function ContactsPage() {
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
+  
+  // Filter and pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'email' | 'createdAt'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
 
+  // Initial load and check for success messages
   useEffect(() => {
-    fetchContacts();
-    
     // Check for success messages from query params
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -35,7 +43,23 @@ export default function ContactsPage() {
         router.replace('/contacts');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Debounced search - reset to page 1 when search changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Fetch contacts when filters/pagination change
+  useEffect(() => {
+    fetchContacts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit, search, sortBy, sortOrder]);
 
   // Auto-dismiss success message after 5 seconds
   useEffect(() => {
@@ -51,14 +75,43 @@ export default function ContactsPage() {
     try {
       setLoading(true);
       setError('');
-      const data = await getContacts();
-      // Handle paginated response - extract items array
+      const data = await getContacts(page, limit, search || undefined, sortBy, sortOrder);
+      // Handle paginated response
       setContacts(data.items);
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load contacts');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1); // Reset to first page on search
+  };
+
+  const handleSortByChange = (value: 'name' | 'email' | 'createdAt') => {
+    setSortBy(value);
+    setPage(1); // Reset to first page on sort change
+  };
+
+  const handleSortOrderChange = (value: 'ASC' | 'DESC') => {
+    setSortOrder(value);
+    setPage(1); // Reset to first page on sort change
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setPage(1); // Reset to first page when changing limit
   };
 
   const handleDelete = async (id: string) => {
@@ -92,6 +145,83 @@ export default function ContactsPage() {
             >
               Add New Contact
             </Link>
+          </div>
+
+          {/* Filter and Sort Controls */}
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Search */}
+              <div className="md:col-span-2">
+                <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
+                  Search
+                </label>
+                <input
+                  type="text"
+                  id="search"
+                  value={search}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  placeholder="Search by name or email..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+                />
+              </div>
+
+              {/* Sort By */}
+              <div>
+                <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-2">
+                  Sort By
+                </label>
+                <select
+                  id="sortBy"
+                  value={sortBy}
+                  onChange={(e) => handleSortByChange(e.target.value as 'name' | 'email' | 'createdAt')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+                >
+                  <option value="createdAt">Created Date</option>
+                  <option value="name">Name</option>
+                  <option value="email">Email</option>
+                </select>
+              </div>
+
+              {/* Sort Order */}
+              <div>
+                <label htmlFor="sortOrder" className="block text-sm font-medium text-gray-700 mb-2">
+                  Order
+                </label>
+                <select
+                  id="sortOrder"
+                  value={sortOrder}
+                  onChange={(e) => handleSortOrderChange(e.target.value as 'ASC' | 'DESC')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+                >
+                  <option value="DESC">Descending</option>
+                  <option value="ASC">Ascending</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Results count and limit */}
+            <div className="mt-4 flex justify-between items-center">
+              <div className="text-sm text-gray-600">
+                Showing {contacts.length > 0 ? (page - 1) * limit + 1 : 0} to{' '}
+                {Math.min(page * limit, total)} of {total} contacts
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor="limit" className="text-sm text-gray-700">
+                  Per page:
+                </label>
+                <select
+                  id="limit"
+                  value={limit}
+                  onChange={(e) => handleLimitChange(Number(e.target.value))}
+                  className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 text-sm"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           {loading && (
@@ -198,6 +328,56 @@ export default function ContactsPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {!loading && !error && totalPages > 1 && (
+            <div className="mt-6 flex justify-center items-center gap-2">
+              <button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page === 1}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (page <= 3) {
+                    pageNum = i + 1;
+                  } else if (page >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-4 py-2 border rounded-lg text-sm font-medium ${
+                        page === pageNum
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page === totalPages}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
             </div>
           )}
         </main>
