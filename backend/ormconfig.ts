@@ -1,9 +1,11 @@
 import { DataSource } from 'typeorm';
-import { User } from './src/user.entity';
-import { Contact } from './src/contact.entity';
+import { User } from './src/entities/user.entity';
+import { Contact } from './src/entities/contact.entity';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
+
+const useSsl = process.env.DB_SSL === 'true';
 
 export default new DataSource({
   type: 'postgres',
@@ -14,4 +16,5 @@ export default new DataSource({
   database: process.env.DB_NAME,
   entities: [User, Contact],
   migrations: ['migrations/*.ts'],
+  ssl: useSsl ? { rejectUnauthorized: false } : false,
 });

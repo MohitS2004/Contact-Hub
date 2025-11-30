@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Contact } from './contact.entity';
 
 export enum UserRole {
   USER = 'user',
@@ -29,9 +31,20 @@ export class User {
   })
   role: UserRole;
 
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamptz',
+    default: () => "timezone('utc', now())",
+  })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({
+    type: 'timestamptz',
+    default: () => "timezone('utc', now())",
+    onUpdate: "timezone('utc', now())",
+  })
   updatedAt: Date;
+
+  @OneToMany(() => Contact, (contact) => contact.owner)
+  contacts: Contact[];
 }
+
