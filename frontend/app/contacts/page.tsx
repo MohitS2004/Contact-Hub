@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Navbar from '@/components/Navbar';
+import ContactsTable from '@/components/ContactsTable';
 import { useAuth } from '@/contexts/AuthContext';
 import { getContacts, deleteContact, Contact } from '@/lib/api';
-import { formatLocalDateOnly } from '@/lib/dateUtils';
 
 export default function ContactsPage() {
   const router = useRouter();
@@ -23,9 +23,46 @@ export default function ContactsPage() {
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [search, setSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'email' | 'createdAt'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  
+  // Helper function to get sort option value
+  const getSortValue = (): string => {
+    if (sortBy === 'name') {
+      return sortOrder === 'ASC' ? 'name-asc' : 'name-desc';
+    }
+    if (sortBy === 'createdAt') {
+      return sortOrder === 'DESC' ? 'newest' : 'oldest';
+    }
+    return 'newest';
+  };
+
+  // Helper function to set sort from option value
+  const setSortFromValue = (value: string) => {
+    switch (value) {
+      case 'name-asc':
+        setSortBy('name');
+        setSortOrder('ASC');
+        break;
+      case 'name-desc':
+        setSortBy('name');
+        setSortOrder('DESC');
+        break;
+      case 'newest':
+        setSortBy('createdAt');
+        setSortOrder('DESC');
+        break;
+      case 'oldest':
+        setSortBy('createdAt');
+        setSortOrder('ASC');
+        break;
+      default:
+        setSortBy('createdAt');
+        setSortOrder('DESC');
+    }
+    setPage(1); // Reset to first page on sort change
+  };
 
   // Initial load and check for success messages
   useEffect(() => {
@@ -53,13 +90,13 @@ export default function ContactsPage() {
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [searchQuery]);
 
   // Fetch contacts when filters/pagination change
   useEffect(() => {
     fetchContacts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, search, sortBy, sortOrder]);
+  }, [page, limit, searchQuery, sortBy, sortOrder]);
 
   // Auto-dismiss success message after 5 seconds
   useEffect(() => {
@@ -75,7 +112,7 @@ export default function ContactsPage() {
     try {
       setLoading(true);
       setError('');
-      const data = await getContacts(page, limit, search || undefined, sortBy, sortOrder);
+      const data = await getContacts(page, limit, searchQuery || undefined, sortBy, sortOrder);
       // Handle paginated response
       setContacts(data.items);
       setTotal(data.total);
@@ -88,19 +125,10 @@ export default function ContactsPage() {
   };
 
   const handleSearchChange = (value: string) => {
-    setSearch(value);
+    setSearchQuery(value);
     setPage(1); // Reset to first page on search
   };
 
-  const handleSortByChange = (value: 'name' | 'email' | 'createdAt') => {
-    setSortBy(value);
-    setPage(1); // Reset to first page on sort change
-  };
-
-  const handleSortOrderChange = (value: 'ASC' | 'DESC') => {
-    setSortOrder(value);
-    setPage(1); // Reset to first page on sort change
-  };
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -149,61 +177,51 @@ export default function ContactsPage() {
 
           {/* Filter and Sort Controls */}
           <div className="bg-white rounded-lg shadow p-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Search */}
-              <div className="md:col-span-2">
+              <div>
                 <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
                   Search
                 </label>
                 <input
                   type="text"
                   id="search"
-                  value={search}
+                  value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder="Search by name or email..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
                 />
               </div>
 
-              {/* Sort By */}
-              <div>
-                <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-2">
+              {/* Sort */}
+              <div className="md:col-span-2">
+                <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-2">
                   Sort By
                 </label>
                 <select
-                  id="sortBy"
-                  value={sortBy}
-                  onChange={(e) => handleSortByChange(e.target.value as 'name' | 'email' | 'createdAt')}
+                  id="sort"
+                  value={getSortValue()}
+                  onChange={(e) => setSortFromValue(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
                 >
-                  <option value="createdAt">Created Date</option>
-                  <option value="name">Name</option>
-                  <option value="email">Email</option>
-                </select>
-              </div>
-
-              {/* Sort Order */}
-              <div>
-                <label htmlFor="sortOrder" className="block text-sm font-medium text-gray-700 mb-2">
-                  Order
-                </label>
-                <select
-                  id="sortOrder"
-                  value={sortOrder}
-                  onChange={(e) => handleSortOrderChange(e.target.value as 'ASC' | 'DESC')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
-                >
-                  <option value="DESC">Descending</option>
-                  <option value="ASC">Ascending</option>
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="name-asc">Name (A-Z)</option>
+                  <option value="name-desc">Name (Z-A)</option>
                 </select>
               </div>
             </div>
 
             {/* Results count and limit */}
-            <div className="mt-4 flex justify-between items-center">
+            <div className="mt-4 flex justify-between items-center flex-wrap gap-4">
               <div className="text-sm text-gray-600">
-                Showing {contacts.length > 0 ? (page - 1) * limit + 1 : 0} to{' '}
-                {Math.min(page * limit, total)} of {total} contacts
+                {total > 0 ? (
+                  <>
+                    Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} contacts
+                  </>
+                ) : (
+                  <span>No contacts found</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <label htmlFor="limit" className="text-sm text-gray-700">
@@ -223,12 +241,6 @@ export default function ContactsPage() {
               </div>
             </div>
           </div>
-
-          {loading && (
-            <div className="text-center py-12">
-              <p className="text-gray-600">Loading contacts...</p>
-            </div>
-          )}
 
           {successMessage && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex justify-between items-center">
@@ -250,134 +262,103 @@ export default function ContactsPage() {
 
           {!loading && !error && contacts.length === 0 && (
             <div className="bg-white rounded-lg shadow p-12 text-center">
-              <p className="text-gray-600 text-lg mb-4">No contacts yet</p>
-              <Link
-                href="/contacts/new"
-                className="text-indigo-600 hover:text-indigo-700 font-medium"
-              >
-                Create your first contact →
-              </Link>
+              {searchQuery ? (
+                <>
+                  <p className="text-gray-600 text-lg mb-4">
+                    No results for &quot;{searchQuery}&quot;
+                  </p>
+                  <button
+                    onClick={() => handleSearchChange('')}
+                    className="text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    Clear search
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-600 text-lg mb-4">No contacts yet</p>
+                  <Link
+                    href="/contacts/new"
+                    className="text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    Create your first contact →
+                  </Link>
+                </>
+              )}
             </div>
           )}
 
-          {!loading && !error && contacts.length > 0 && (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Phone
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Created
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {contacts.map((contact) => (
-                      <tr key={contact.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{contact.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{contact.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{contact.phone}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
-                            {formatLocalDateOnly(contact.createdAt)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end gap-2">
-                            <Link
-                              href={`/contacts/${contact.id}`}
-                              className="text-indigo-600 hover:text-indigo-900"
-                            >
-                              View
-                            </Link>
-                            <Link
-                              href={`/contacts/${contact.id}/edit`}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              Edit
-                            </Link>
-                            <button
-                              onClick={() => handleDelete(contact.id)}
-                              disabled={deletingId === contact.id}
-                              className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                            >
-                              {deletingId === contact.id ? 'Deleting...' : 'Delete'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {loading && (
+            <div className="text-center py-12">
+              <p className="text-gray-600">Loading contacts...</p>
             </div>
+          )}
+
+          {!loading && (
+            <ContactsTable
+              contacts={contacts}
+              onDelete={handleDelete}
+              deletingId={deletingId}
+            />
           )}
 
           {/* Pagination Controls */}
-          {!loading && !error && totalPages > 1 && (
-            <div className="mt-6 flex justify-center items-center gap-2">
-              <button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              
-              <div className="flex gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (page <= 3) {
-                    pageNum = i + 1;
-                  } else if (page >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = page - 2 + i;
-                  }
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`px-4 py-2 border rounded-lg text-sm font-medium ${
-                        page === pageNum
-                          ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
+          {!loading && !error && totalPages > 0 && (
+            <div className="mt-6 bg-white rounded-lg shadow p-4">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                {/* Page info */}
+                <div className="text-sm text-gray-600">
+                  Page {page} of {totalPages}
+                </div>
 
-              <button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page === totalPages}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
+                {/* Pagination buttons */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(page - 1)}
+                    disabled={page === 1}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (page <= 3) {
+                        pageNum = i + 1;
+                      } else if (page >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = page - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${
+                            page === pageNum
+                              ? 'bg-indigo-600 text-white border-indigo-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(page + 1)}
+                    disabled={page === totalPages}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </main>

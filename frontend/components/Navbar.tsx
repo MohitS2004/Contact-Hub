@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Navbar() {
@@ -20,7 +21,17 @@ export default function Navbar() {
     <nav className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <h1 className="text-xl font-bold text-gray-900">Contact Hub</h1>
+          <div className="flex items-center gap-6">
+            <h1 className="text-xl font-bold text-gray-900">Contact Hub</h1>
+            <Link href="/contacts" className="text-sm text-gray-600 hover:text-gray-900">
+              Contacts
+            </Link>
+            {user?.role === 'admin' && (
+              <Link href="/admin" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                Admin
+              </Link>
+            )}
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">
               Welcome, {user?.email?.split('@')[0] || 'User'}

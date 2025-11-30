@@ -174,6 +174,109 @@ export const deleteContact = async (id: string): Promise<void> => {
   await apiClient.delete(`/contacts/${id}`);
 };
 
+// Admin API functions
+export interface AdminStats {
+  totalUsers: number;
+  totalContacts: number;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminContact extends Contact {
+  ownerEmail: string | null;
+  ownerName: string | null;
+}
+
+export const getAdminStats = async (): Promise<AdminStats> => {
+  const response = await apiClient.get<AdminStats>('/admin/stats');
+  return response.data;
+};
+
+export interface PaginatedUsersResponse {
+  items: AdminUser[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export const getAdminUsers = async (
+  page: number = 1,
+  limit: number = 10,
+  search?: string,
+): Promise<PaginatedUsersResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+  
+  if (search) {
+    params.append('search', search);
+  }
+
+  const response = await apiClient.get<PaginatedUsersResponse>(`/admin/users?${params.toString()}`);
+  return response.data;
+};
+
+export const getAdminUser = async (id: string): Promise<AdminUser> => {
+  const response = await apiClient.get<AdminUser>(`/admin/users/${id}`);
+  return response.data;
+};
+
+export const deleteAdminUser = async (id: string): Promise<void> => {
+  await apiClient.delete(`/admin/users/${id}`);
+};
+
+export const updateUserRole = async (id: string, role: string): Promise<AdminUser> => {
+  const response = await apiClient.put<AdminUser>(`/admin/users/${id}/role`, { role });
+  return response.data;
+};
+
+export interface PaginatedAdminContactsResponse {
+  items: AdminContact[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export const getAdminContacts = async (
+  page: number = 1,
+  limit: number = 10,
+  search?: string,
+  sortBy: 'name' | 'email' | 'createdAt' = 'createdAt',
+  sortOrder: 'ASC' | 'DESC' = 'DESC',
+): Promise<PaginatedAdminContactsResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    sortBy,
+    sortOrder,
+  });
+  
+  if (search) {
+    params.append('search', search);
+  }
+
+  const response = await apiClient.get<PaginatedAdminContactsResponse>(`/admin/contacts?${params.toString()}`);
+  return response.data;
+};
+
+export const getAdminContact = async (id: string): Promise<AdminContact> => {
+  const response = await apiClient.get<AdminContact>(`/admin/contacts/${id}`);
+  return response.data;
+};
+
+export const deleteAdminContact = async (id: string): Promise<void> => {
+  await apiClient.delete(`/admin/contacts/${id}`);
+};
+
 // Export the apiClient for custom requests
 export default apiClient;
 
