@@ -23,7 +23,7 @@ export default function Navbar() {
           <h1 className="text-xl font-bold text-gray-900">Contact Hub</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">
-              Welcome, {user?.email}
+              Welcome, {user?.email?.split('@')[0] || 'User'}
             </span>
             <button
               onClick={handleLogout}

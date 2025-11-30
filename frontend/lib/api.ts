@@ -30,6 +30,16 @@ apiClient.interceptors.request.use(
 // Also unwraps standard API response format { success, message, data, timestamp }
 apiClient.interceptors.response.use(
   (response) => {
+    // If response is paginated (has items, total, page, etc.), keep it as-is
+    if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'items' in response.data &&
+      'total' in response.data
+    ) {
+      return response;
+    }
+    
     // If response follows standard API format, unwrap it
     if (response.data && typeof response.data === 'object' && 'success' in response.data && 'data' in response.data) {
       response.data = response.data.data;
@@ -90,6 +100,14 @@ export interface UpdateContactData {
   phone?: string;
 }
 
+export interface PaginatedContactsResponse {
+  items: Contact[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 // Register function
 export const register = async (email: string, password: string): Promise<LoginResponse> => {
   const response = await apiClient.post<LoginResponse>('/auth/register', {
@@ -115,8 +133,25 @@ export const getMe = async (): Promise<UserInfo> => {
 };
 
 // Contacts API functions
-export const getContacts = async (): Promise<Contact[]> => {
-  const response = await apiClient.get<Contact[]>('/contacts');
+export const getContacts = async (
+  page: number = 1,
+  limit: number = 10,
+  search?: string,
+  sortBy: 'name' | 'email' | 'createdAt' = 'createdAt',
+  sortOrder: 'ASC' | 'DESC' = 'DESC',
+): Promise<PaginatedContactsResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    sortBy,
+    sortOrder,
+  });
+  
+  if (search) {
+    params.append('search', search);
+  }
+
+  const response = await apiClient.get<PaginatedContactsResponse>(`/contacts?${params.toString()}`);
   return response.data;
 };
 

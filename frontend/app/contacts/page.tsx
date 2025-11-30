@@ -52,7 +52,8 @@ export default function ContactsPage() {
       setLoading(true);
       setError('');
       const data = await getContacts();
-      setContacts(data);
+      // Handle paginated response - extract items array
+      setContacts(data.items);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load contacts');
     } finally {
@@ -68,8 +69,8 @@ export default function ContactsPage() {
     try {
       setDeletingId(id);
       await deleteContact(id);
-      // Remove from state
-      setContacts(contacts.filter((contact) => contact.id !== id));
+      // Refresh contacts list
+      fetchContacts();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to delete contact');
     } finally {

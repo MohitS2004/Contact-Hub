@@ -5,11 +5,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Contact } from '../entities/contact.entity';
 import { User, UserRole } from '../entities/user.entity';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
+import { GetContactsQueryDto, SortBy, SortOrder } from './dto/get-contacts-query.dto';
+import { PaginatedResponse } from '../common/interfaces/api-response.interface';
 import { APP_CONSTANTS } from '../common/constants/app.constants';
 
 @Injectable()
@@ -21,14 +23,59 @@ export class ContactsService {
     private contactRepository: Repository<Contact>,
   ) {}
 
-  async findAll(currentUser: User): Promise<Contact[]> {
-    // Admin sees all contacts, normal user sees only their own
-    if (currentUser.role === UserRole.ADMIN) {
-      return this.contactRepository.find();
+  async findAll(
+    query: GetContactsQueryDto,
+    currentUser: User,
+  ): Promise<PaginatedResponse<Contact>> {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sortBy = SortBy.CREATED_AT,
+      sortOrder = SortOrder.DESC,
+    } = query;
+
+    const skip = (page - 1) * limit;
+
+    // Build query builder
+    const queryBuilder = this.contactRepository.createQueryBuilder('contact');
+
+    // Ownership filter: regular users see only their own, admin sees all
+    if (currentUser.role !== UserRole.ADMIN) {
+      queryBuilder.where('contact.ownerId = :ownerId', { ownerId: currentUser.id });
     }
-    return this.contactRepository.find({
-      where: { ownerId: currentUser.id },
-    });
+
+    // Search filter: search by name or email
+    if (search) {
+      queryBuilder.andWhere(
+        '(contact.name ILIKE :search OR contact.email ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // Sorting
+    const orderBy = `contact.${sortBy}`;
+    queryBuilder.orderBy(orderBy, sortOrder);
+
+    // Get total count before pagination
+    const total = await queryBuilder.getCount();
+
+    // Apply pagination
+    queryBuilder.skip(skip).take(limit);
+
+    // Execute query
+    const items = await queryBuilder.getMany();
+
+    // Calculate total pages
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
   }
 
   async create(createContactDto: CreateContactDto, currentUser: User): Promise<Contact> {

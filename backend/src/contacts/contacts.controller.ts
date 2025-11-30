@@ -9,10 +9,12 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
+import { GetContactsQueryDto } from './dto/get-contacts-query.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { User } from '../entities/user.entity';
@@ -23,8 +25,8 @@ export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
 
   @Get()
-  findAll(@CurrentUser() user: User) {
-    return this.contactsService.findAll(user);
+  findAll(@Query() query: GetContactsQueryDto, @CurrentUser() user: User) {
+    return this.contactsService.findAll(query, user);
   }
 
   @Post()

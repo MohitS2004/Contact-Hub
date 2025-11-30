@@ -13,7 +13,7 @@ export interface ApiResponse<T = any> {
  * Paginated response interface
  */
 export interface PaginatedResponse<T> {
-  data: T[];
+  items: T[];
   total: number;
   page: number;
   limit: number;

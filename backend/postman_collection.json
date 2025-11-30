@@ -114,6 +114,216 @@
       ]
     },
     {
+      "name": "Contacts",
+      "item": [
+        {
+          "name": "Get All Contacts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/contacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts"]
+            },
+            "description": "Get all contacts for the current user. Admin users see all contacts, regular users see only their own."
+          }
+        },
+        {
+          "name": "Create Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+1 234 567 8900\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts"]
+            },
+            "description": "Create a new contact. Requires: name, email, phone. Contact is automatically assigned to the current user."
+          }
+        },
+        {
+          "name": "Get Contact by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/contacts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Contact UUID"
+                }
+              ]
+            },
+            "description": "Get a single contact by ID. Users can only access their own contacts. Admins can access any contact."
+          }
+        },
+        {
+          "name": "Update Contact",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Updated\",\n  \"email\": \"john.updated@example.com\",\n  \"phone\": \"+1 234 567 9999\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contacts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Contact UUID"
+                }
+              ]
+            },
+            "description": "Update a contact. All fields are optional. Users can only update their own contacts. Admins can update any contact."
+          }
+        },
+        {
+          "name": "Delete Contact",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/contacts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Contact UUID"
+                }
+              ]
+            },
+            "description": "Delete a contact. Users can only delete their own contacts. Admins can delete any contact. Returns 204 No Content on success."
+          }
+        },
+        {
+          "name": "Create Contact - Validation Error (Missing Fields)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts"]
+            },
+            "description": "Test validation - missing required fields (email, phone). Should return 400 Bad Request."
+          }
+        },
+        {
+          "name": "Get Contact - Invalid ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/contacts/invalid-id-123",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", "invalid-id-123"]
+            },
+            "description": "Test with invalid contact ID. Should return 404 Not Found."
+          }
+        },
+        {
+          "name": "Update Contact - Not Found",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contacts/00000000-0000-0000-0000-000000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", "00000000-0000-0000-0000-000000000000"]
+            },
+            "description": "Test updating non-existent contact. Should return 404 Not Found."
+          }
+        }
+      ]
+    },
+    {
       "name": "Admin",
       "item": [
         {
